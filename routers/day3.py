@@ -191,3 +191,101 @@ async def create_offer(offer: Offer):
     Deeply nested models are used to validate the value of offer from the request body. The value of offer must be a valid Offer object, which contains a list of Item objects, which in turn contains a list of Image objects.
     '''
     return offer
+
+
+#! Declare Request Example Data
+
+
+## Extra JSON Schema data in Pydantic models
+class Item1(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    tax: float | None = None
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "name": "Foo",
+                    "description": "A very nice Item",
+                    "price": 35.4,
+                    "tax": 3.2,
+                }
+            ]
+        }
+    }
+
+
+@router.put("/items-examples/{item_id}")
+async def update_item(item_id: int, item: Item1):
+    results = {"item_id": item_id, "item": item}
+    return results
+
+
+
+## Field additional arguments
+
+class Item2(BaseModel):
+    name: str = Field(examples=["Foo"])
+    description: str | None = Field(default=None, examples=["A very nice Item"])
+    price: float = Field(examples=[35.4])
+    tax: float | None = Field(default=None, examples=[3.2])
+
+
+@router.put("/items-field-examples/{item_id}")
+async def update_item(item_id: int, item: Item2):
+    results = {"item_id": item_id, "item": item}
+    return results
+
+
+
+## Body with examples
+
+@router.put("/items-body-examples/{item_id}")
+async def update_item(
+    item_id: int,
+    item: Annotated[
+        Item,
+        Body(
+            examples=[
+                {
+                    "name": "Foo",
+                    "description": "A very nice Item",
+                    "price": 35.4,
+                    "tax": 3.2,
+                }
+            ],
+        ),
+    ],
+):
+    results = {"item_id": item_id, "item": item}
+    return results
+
+
+
+#! Extra Data Types
+
+from datetime import datetime, time, timedelta
+from uuid import UUID
+
+
+@router.put("/items-extra-data-types/{item_id}")
+async def read_items(
+    item_id: UUID,
+    start_datetime: Annotated[datetime, Body()],
+    end_datetime: Annotated[datetime, Body()],
+    process_after: Annotated[timedelta, Body()],
+    repeat_at: Annotated[time | None, Body()] = None,
+):
+    start_process = start_datetime + process_after
+    duration = end_datetime - start_process
+    return {
+        "item_id": item_id,
+        "start_datetime": start_datetime,
+        "end_datetime": end_datetime,
+        "process_after": process_after,
+        "repeat_at": repeat_at,
+        "start_process": start_process,
+        "duration": duration,
+    }
