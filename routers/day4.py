@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, Cookie, Header
+from fastapi import FastAPI, APIRouter, Cookie, Header, Form
 from typing import Annotated, Any
 from pydantic import BaseModel, EmailStr
 
@@ -269,3 +269,79 @@ items = {
 @router.get("/items/{item_id}", response_model=Item, response_model_exclude_unset=True)
 async def read_item(item_id: str):
     return items[item_id]
+
+
+
+
+#! Extra Models
+
+class UserIn(BaseModel):
+    username: str
+    password: str
+    email: EmailStr
+    full_name: str | None = None
+
+
+class UserOut(BaseModel):
+    username: str
+    email: EmailStr
+    full_name: str | None = None
+
+
+class UserInDB(BaseModel):
+    username: str
+    hashed_password: str
+    email: EmailStr
+    full_name: str | None = None
+
+
+def fake_password_hasher(raw_password: str):
+    return "supersecret" + raw_password
+
+
+def fake_save_user(user_in: UserIn):
+    hashed_password = fake_password_hasher(user_in.password)
+    user_in_db = UserInDB(**user_in.model_dump(), hashed_password=hashed_password)
+    print(f"User saved! ..not really: {user_in_db}")
+    return user_in_db
+
+
+@router.post("/user-extra/", response_model=UserOut)
+async def create_user(user_in: UserIn):
+    user_saved = fake_save_user(user_in)
+    return user_saved
+
+
+#! Response Status Code
+
+from fastapi import status
+
+@router.post("/items-status-code/", status_code=201)
+async def create_item(name: str):
+    return {"name": name}
+
+
+## Convenience variables
+@router.post("/items-convenience-status/", status_code=status.HTTP_201_CREATED)
+async def create_item(name: str):
+    return {"name": name}
+
+
+
+#! Form Data
+
+@router.post("/login/")
+async def login(username: Annotated[str, Form()], password: Annotated[str, Form()]):
+    return {"username": username}
+
+
+#! Form Models
+
+class FormData(BaseModel):
+    username: str
+    password: str
+    model_config = {"extra": "forbid"}   # If a client tries to send some extra data, they will receive an error response.
+
+@router.post("/login-form-model/")
+async def login(data: Annotated[FormData, Form()]):
+    return data
