@@ -1,12 +1,13 @@
 from fastapi import FastAPI
 from enum import Enum
 
-from routers import day2, day3
+from routers import day2, day3, day4
 
 app = FastAPI()
 
 app.include_router(day2.router)
 app.include_router(day3.router)
+app.include_router(day4.router)
 
 @app.get("/")
 def home():

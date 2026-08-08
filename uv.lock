@@ -173,11 +173,15 @@ name = "fastapi-practice"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "email-validator" },
     { name = "fastapi", extra = ["standard"] },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "fastapi", extras = ["standard"], specifier = ">=0.141.1" }]
+requires-dist = [
+    { name = "email-validator", specifier = ">=2.3.0" },
+    { name = "fastapi", extras = ["standard"], specifier = ">=0.141.1" },
+]
 
 [[package]]
 name = "fastar"
