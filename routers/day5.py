@@ -1,7 +1,9 @@
-from fastapi import APIRouter, File, UploadFile, Form, HTTPException, Request, status
+from fastapi import APIRouter, File, UploadFile, Form, HTTPException, Request, status, Depends
 from pydantic import BaseModel
 from typing import Annotated
 from fastapi.responses import HTMLResponse, JSONResponse
+from datetime import datetime
+from fastapi.encoders import jsonable_encoder
 
 router = APIRouter(prefix='/day5', tags=['Day 5'])
 
@@ -259,5 +261,114 @@ async def create_item(item: Item) -> Item:
     - **tags**: a set of unique tag strings for this item
     '''
     return item
+
+
+
+#! JSON Compatible Encoder
+
+
+# There are some cases where you might need to convert a data type (like a Pydantic model) to something compatible with JSON (like a dict, list, etc).
+
+# For example, if you need to store it in a database.
+
+# For that, FastAPI provides a jsonable_encoder() function.
+
+fake_db = {}
+
+
+class Item(BaseModel):
+    title: str
+    timestamp: datetime
+    description: str | None = None
+
+
+@router.put("/items-encode/{id}")
+def update_item(id: str, item: Item):
+    json_compatible_item_data = jsonable_encoder(item)
+    fake_db[id] = json_compatible_item_data
+    return fake_db
+
+
+
+#! Body - Updates
+
+
+## Update replacing with PUT
+
+class Item(BaseModel):
+    name: str | None = None
+    description: str | None = None
+    price: float | None = None
+    tax: float = 10.5
+    tags: list[str] = []
+
+
+items = {
+    "foo": {"name": "Foo", "price": 50.2},
+    "bar": {"name": "Bar", "description": "The bartenders", "price": 62, "tax": 20.2},
+    "baz": {"name": "Baz", "description": None, "price": 50.2, "tax": 10.5, "tags": []},
+}
+
+
+@router.get("/items-up/", response_model=None)
+async def read_item() -> dict:
+    return items
+
+# @router.get("/items-up/", response_model=list[Item])
+# async def read_item():
+#     return list(items.values())
+
+
+@router.put("/items-up/{item_id}", response_model=Item)
+async def update_item(item_id: str, item: Item):
+    update_item_encoded = jsonable_encoder(item)
+    items[item_id] = update_item_encoded
+    return update_item_encoded
+
+
+
+
+#! Dependencies
+
+
+# "Dependency Injection" means, in programming, that there is a way for your code (in this case, your path operation functions) to declare things that it requires to work and use: "dependencies".
+
+# And then, that system (in this case FastAPI) will take care of doing whatever is needed to provide your code with those needed dependencies ("inject" the dependencies).
+
+# This is very useful when you need to:
+
+# Have shared logic (the same code logic again and again).
+# Share database connections.
+# Enforce security, authentication, role requirements, etc.
+# And many other things...
+# All these, while minimizing code repetition.
+
+async def common_parameters(q: str | None = None, skip: int = 0, limit: int = 100):
+    return {"q": q, "skip": skip, "limit": limit}
+
+
+# @router.get("/items-depends/")
+# async def read_items(commons: Annotated[dict, Depends(common_parameters)]):
+#     return commons
+
+
+# @router.get("/users-depends/")
+# async def read_users(commons: Annotated[dict, Depends(common_parameters)]):
+#     return commons
+
+
+CommonsDep = Annotated[dict, Depends(common_parameters)]  # This is just standard Python, it's called a "type alias", it's actually not specific to FastAPI.
+
+
+
+
+@router.get("/items/-depends")
+async def read_items(commons: CommonsDep):
+    return commons
+
+
+@router.get("/users/-depends/")
+async def read_users(commons: CommonsDep):
+    return commons
 
 
