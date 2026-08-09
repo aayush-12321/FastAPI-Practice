@@ -1,7 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from enum import Enum
+from fastapi.responses import JSONResponse
 
 from routers import day2, day3, day4, day5
+from routers.day5 import UnicornException
 
 app = FastAPI()
 
@@ -9,6 +11,39 @@ app.include_router(day2.router)
 app.include_router(day3.router)
 app.include_router(day4.router)
 app.include_router(day5.router)
+
+
+#! DAY 5  ####################################33
+
+@app.exception_handler(UnicornException)
+async def unicorn_exception_handler(request: Request, exc: UnicornException):
+    return JSONResponse(
+        status_code=418,
+        content={"message": f"Oops! {exc.name} did something. There goes a rainbow..."},
+    )
+
+
+from fastapi.exceptions import RequestValidationError, HTTPException
+from fastapi.responses import PlainTextResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request, exc):
+    return PlainTextResponse(str(exc.detail), status_code=exc.status_code)
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc: RequestValidationError):
+    message = "Validation errors:"
+    for error in exc.errors():
+        message += f"\nField: {error['loc']}, Error: {error['msg']}"
+    return PlainTextResponse(message, status_code=400)
+
+
+#! ##################################################
+
 
 @app.get("/")
 def home():
