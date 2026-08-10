@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Cookie, Header, HTTPException
 from pydantic import BaseModel
 from typing import Annotated
+from fastapi.security import OAuth2PasswordBearer
 
 
 router = APIRouter(prefix='/day6', tags=['Day 6'])
@@ -170,3 +171,42 @@ def get_item(item_id: str, username: Annotated[str, Depends(get_username)]):
             status_code=404, detail="Item not found, there's only a plumbus here"
         )
     return item_id
+
+
+
+#! Security
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+@router.get("/security/")
+async def read_items(token: Annotated[str, Depends(oauth2_scheme)]):
+    return {"token": token}
+
+
+
+## Get Current User
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+
+class User(BaseModel):
+    username: str
+    email: str | None = None
+    full_name: str | None = None
+    disabled: bool | None = None
+
+
+def fake_decode_token(token):
+    return User(
+        username=token + "fakedecoded", email="john@example.com", full_name="John Doe"
+    )
+
+
+async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
+    user = fake_decode_token(token)
+    return user
+
+
+@router.get("/users/me")
+async def read_users_me(current_user: Annotated[User, Depends(get_current_user)]):
+    return current_user
