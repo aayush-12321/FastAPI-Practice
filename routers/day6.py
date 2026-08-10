@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Cookie
+from fastapi import APIRouter, Depends, Cookie, Header, HTTPException
 from pydantic import BaseModel
 from typing import Annotated
 
@@ -76,3 +76,97 @@ async def needy_dependency(fresh_value: Annotated[str, Depends(query_or_cookie_e
 
 
 #! Dependencies in path operation decorators
+
+# These dependencies will be executed/solved the same way as normal dependencies. But their value (if they return any) won't be passed to your path operation function.
+
+async def verify_token(x_token: Annotated[str, Header()]):
+    if x_token != "fake-super-secret-token":
+        raise HTTPException(status_code=400, detail="X-Token header invalid")
+
+
+async def verify_key(x_key: Annotated[str, Header()]):
+    if x_key != "fake-super-secret-key":
+        raise HTTPException(status_code=400, detail="X-Key header invalid")
+    return x_key
+
+
+@router.get("/items-dep-path/", dependencies=[Depends(verify_token), Depends(verify_key)])
+async def read_items():
+    return [{"item": "Foo"}, {"item": "Bar"}]
+
+
+
+#!Global Dependencies
+
+
+# Similar to the way you can add dependencies to the path operation decorators, you can add them to the FastAPI application.
+
+# In that case, they will be applied to all the path operations in the application:
+
+#? app = FastAPI(dependencies=[Depends(verify_token), Depends(verify_key)])
+
+
+
+#! Dependencies with yield
+
+# If you catch an exception in a dependency with yield, unless you are raising another HTTPException or similar, you should re-raise the original exception.
+# yield: "Here's the database. Pause this dependency while the endpoint runs. When the endpoint is finished, come back here and do the cleanup."
+
+# You can re-raise the same exception using raise:
+
+data = {
+    "plumbus": {"description": "Freshly pickled plumbus", "owner": "Morty"},
+    "portal-gun": {"description": "Gun to create portals", "owner": "Rick"},
+}
+
+
+class OwnerError(Exception):
+    pass
+
+
+def get_username():
+    try:
+        yield "Rick"
+    except OwnerError as e:
+        raise HTTPException(status_code=400, detail=f"Owner error: {e}")
+
+
+@router.get("/items-yield/{item_id}")
+def get_item(item_id: str, username: Annotated[str, Depends(get_username)]):
+    if item_id not in data:
+        raise HTTPException(status_code=404, detail="Item not found")
+    item = data[item_id]
+    if item["owner"] != username:
+        raise OwnerError(username)
+    return item
+
+
+## Always raise in Dependencies with yield and except
+
+# If you catch an exception in a dependency with yield, unless you are raising another HTTPException or similar, you should re-raise the original exception.
+
+# You can re-raise the same exception using raise
+
+class InternalError(Exception):
+    pass
+
+
+def get_username():
+    try:
+        yield "Rick"
+    except InternalError:
+        print("We don't swallow the internal error here, we raise again 😎")
+        raise     
+
+
+@router.get("/items-raise/{item_id}")
+def get_item(item_id: str, username: Annotated[str, Depends(get_username)]):
+    if item_id == "portal-gun":
+        raise InternalError(
+            f"The portal gun is too dangerous to be owned by {username}"
+        )
+    if item_id != "plumbus":
+        raise HTTPException(
+            status_code=404, detail="Item not found, there's only a plumbus here"
+        )
+    return item_id
