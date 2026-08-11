@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from enum import Enum
 from fastapi.responses import JSONResponse
 
-from routers import day2, day3, day4, day5, day6
+from routers import day2, day3, day4, day5, day6, day7
 from routers.day5 import UnicornException
 
 app = FastAPI()
@@ -12,6 +12,7 @@ app.include_router(day3.router)
 app.include_router(day4.router)
 app.include_router(day5.router)
 app.include_router(day6.router)
+app.include_router(day7.router)
 
 
 #! DAY 5  ####################################33
