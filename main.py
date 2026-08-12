@@ -5,7 +5,65 @@ from fastapi.responses import JSONResponse
 from routers import day2, day3, day4, day5, day6, day7, day8
 from routers.day5 import UnicornException
 
-app = FastAPI()
+
+#! Day 8
+
+# Metadata for tags users and items
+tags_metadata = [
+    {
+        "name": "users",
+        "description": "Operations with users. The **login** logic is also here.",
+    },
+    {
+        "name": "items",
+        "description": "Manage items. So _fancy_ they have their own docs.",
+        "externalDocs": {
+            "description": "Items external docs",
+            "url": "https://fastapi.tiangolo.com/",
+        },
+    },
+]
+
+# Metadata for API
+description = """
+Practicing FastPI. 🚀
+
+## Items
+
+You can **read items**.
+
+## Users
+
+You will be able to:
+
+* **Create users** (_not implemented_).
+* **Read users** (_not implemented_).
+"""
+
+app = FastAPI(
+    title="FastAPI Practice",
+    description=description,
+    summary="Practicing FastAPI from it's Oficial Documentation",
+    version="0.0.1",
+    terms_of_service="http://example.com/terms/",
+    contact={
+        "name": "Aayush Parajuli",
+        "url": "https://parajuliaayush.com.np",
+        "email": "aayushparajuli23@gmail.com",
+    },
+    license_info={
+        "name": "Apache 2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.html",
+        # "identifier": "Apache-2.0", # Since OpenAPI 3.1.0 and FastAPI 0.99.0, you can also set the license_info with an identifier instead of a url.
+
+    },
+
+    tags_metadata = tags_metadata,   # Metadata for the tags
+
+    # Docs URL Config
+    # docs_url= '/mydocs',
+    # redoc_url=None,
+)
 
 app.include_router(day2.router)
 app.include_router(day3.router)
@@ -91,6 +149,28 @@ def on_startup():
     create_db_and_tables()
 
 #! ##################################################
+
+
+
+#! Day 8 ############################################
+
+@app.get("/demo/")
+async def read_items():
+    return [{"name": "Katana"}]
+
+
+# Metadata for Tags 
+
+@app.get("/users/", tags=["users"])
+async def get_users():
+    return [{"name": "Harry"}, {"name": "Ron"}]
+
+
+@app.get("/items/", tags=["items"])
+async def get_items():
+    return [{"name": "wand"}, {"name": "flying broom"}]
+#! ##################################################
+
 
 
 @app.get("/")
