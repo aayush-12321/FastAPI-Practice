@@ -2,7 +2,7 @@ from fastapi import FastAPI, Request
 from enum import Enum
 from fastapi.responses import JSONResponse
 
-from routers import day2, day3, day4, day5, day6, day7, day8
+from routers import day2, day3, day4, day5, day6, day7, day8, day8_part2
 from routers.day5 import UnicornException
 
 
@@ -72,6 +72,7 @@ app.include_router(day5.router)
 app.include_router(day6.router)
 app.include_router(day7.router)
 app.include_router(day8.router)
+app.include_router(day8_part2.router)
 
 
 #! DAY 5  ####################################33
@@ -92,7 +93,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 @app.exception_handler(StarletteHTTPException)
 async def http_exception_handler(request, exc):
-    return PlainTextResponse(str(exc.detail), status_code=exc.status_code)
+    return JSONResponse({"detail": exc.detail}, status_code=exc.status_code)
 
 
 @app.exception_handler(RequestValidationError)

@@ -367,7 +367,7 @@ async def send_notification(
 # If you also have a FastAPI path operation, the path operation wins
 
 
-router.frontend("/", directory="dist", fallback="index.html")  
+# router.frontend("/", directory="dist", fallback="index.html")  
 
 # Many frontend apps, including single-page apps (SPAs), use client-side routing. A path like /dashboard/settings might not be a real file but the framework would take care of handling it. So, if accessing that URL directly (instead of navigating through the app), the backend should serve the frontend app from index.html, so that the frontend framework can then handle the client-side routing.
 
